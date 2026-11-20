@@ -12,6 +12,7 @@ data/
 .env.local
 
 # 编辑器与系统
+~$*
 .vscode/*.log
 .idea/
 .DS_Store
