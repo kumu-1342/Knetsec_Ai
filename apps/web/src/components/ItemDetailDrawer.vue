@@ -33,7 +33,10 @@ const langLabel = computed(() => {
   return map[props.item.lang] ?? props.item.lang;
 });
 const cveLinks = computed(() =>
-  (props.item?.cveIds ?? []).map((id) => ({ id, url: `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(id)}` })),
+  (props.item?.cveIds ?? []).map((id) => ({
+    id,
+    url: `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(id)}`,
+  })),
 );
 const ghsaLinks = computed(() =>
   (props.item?.ghsaIds ?? []).map((id) => ({
@@ -83,8 +86,12 @@ const rawJson = computed(() => (props.item ? JSON.stringify(props.item, null, 2)
           </el-descriptions-item>
           <el-descriptions-item label="重要性">{{ props.item.importance }}</el-descriptions-item>
           <el-descriptions-item label="语言">{{ langLabel }}</el-descriptions-item>
-          <el-descriptions-item label="发布时间">{{ formatDateTime(props.item.publishedAt) }}</el-descriptions-item>
-          <el-descriptions-item label="抓取时间">{{ formatDateTime(props.item.fetchedAt) }}</el-descriptions-item>
+          <el-descriptions-item label="发布时间">{{
+            formatDateTime(props.item.publishedAt)
+          }}</el-descriptions-item>
+          <el-descriptions-item label="抓取时间">{{
+            formatDateTime(props.item.fetchedAt)
+          }}</el-descriptions-item>
           <el-descriptions-item label="厂商">{{ props.item.vendor || '-' }}</el-descriptions-item>
           <el-descriptions-item label="作者">{{ props.item.author || '-' }}</el-descriptions-item>
         </el-descriptions>
@@ -107,10 +114,22 @@ const rawJson = computed(() => (props.item ? JSON.stringify(props.item, null, 2)
       <section v-if="cveLinks.length > 0 || ghsaLinks.length > 0" class="detail-section">
         <h3 class="detail-section-title">关联编号</h3>
         <div class="id-list">
-          <a v-for="link in cveLinks" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer">
+          <a
+            v-for="link in cveLinks"
+            :key="link.id"
+            :href="link.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <el-tag type="danger" effect="plain" size="small">{{ link.id }}</el-tag>
           </a>
-          <a v-for="link in ghsaLinks" :key="link.id" :href="link.url" target="_blank" rel="noopener noreferrer">
+          <a
+            v-for="link in ghsaLinks"
+            :key="link.id"
+            :href="link.url"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <el-tag type="warning" effect="plain" size="small">{{ link.id }}</el-tag>
           </a>
         </div>
@@ -136,7 +155,9 @@ const rawJson = computed(() => (props.item ? JSON.stringify(props.item, null, 2)
       <div class="drawer-footer">
         <el-button @click="emit('update:modelValue', false)">关闭</el-button>
         <template v-if="auth.isAdmin && props.item">
-          <el-button @click="emit('toggle-read')">{{ props.item.isRead ? '标记未读' : '标记已读' }}</el-button>
+          <el-button @click="emit('toggle-read')">{{
+            props.item.isRead ? '标记未读' : '标记已读'
+          }}</el-button>
           <el-button type="primary" @click="emit('toggle-star')">
             {{ props.item.isStarred ? '取消星标' : '星标' }}
           </el-button>

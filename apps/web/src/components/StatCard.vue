@@ -28,7 +28,9 @@ const props = withDefaults(defineProps<Props>(), {
   icon: undefined,
 });
 
-const displayValue = computed(() => (typeof props.value === 'number' ? formatNumber(props.value) : props.value));
+const displayValue = computed(() =>
+  typeof props.value === 'number' ? formatNumber(props.value) : props.value,
+);
 const iconStyle = computed(() => ({ backgroundColor: `${props.color}14`, color: props.color }));
 </script>
 

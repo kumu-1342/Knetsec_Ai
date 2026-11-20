@@ -98,7 +98,11 @@ export const itemsApi = {
   },
   /** 按当前筛选条件导出，浏览器直接下载。 */
   exportItems(format: ExportFormat, query: ItemListQuery): Promise<void> {
-    return downloadFile('/items/export', cleanParams({ ...query, format }), `knetsec-items-${Date.now()}.${format === 'markdown' ? 'md' : format}`);
+    return downloadFile(
+      '/items/export',
+      cleanParams({ ...query, format }),
+      `knetsec-items-${Date.now()}.${format === 'markdown' ? 'md' : format}`,
+    );
   },
 };
 
@@ -134,32 +138,39 @@ export const sourcesApi = {
 // ---------------------------------------------------------------------------
 
 /**
- * 调度器状态（GET /tasks/status）。
+ * 调度器定时任务状态（与后端 modules/core/context.ts 的 SchedulerJobStatus 对齐）。
  *
- * 契约只描述“调度器状态、下次到期源”，未在 shared 固化具体字段，故此处用宽松只读视图：
- * 页面按可选字段渲染，后端新增/改名不会导致编译失败。字段与后端 modules/tasks 对齐。
+ * shared 契约未固化这两个结构，因此在本文件内以只读视图类型声明；字段命名与后端一致，
+ * 后端后续若把结构提升进 shared，只需删除这里的定义并改为 import。
  */
-export interface SchedulerDueSource {
-  sourceKey?: string;
-  key?: string;
-  name?: string;
-  sourceName?: string;
-  intervalMinutes?: number;
-  lastRunAt?: string | null;
-  nextRunAt?: string | null;
-  nextAt?: string | null;
+export interface SchedulerJobStatus {
+  /** 任务名称（中文），例如「到期数据源扫描」 */
+  name: string;
+  /** cron 表达式，排障用 */
+  cron: string;
+  /** 下一次触发时间；调度器未启动时为 null */
+  nextRunAt: string | null;
 }
 
+/** 到期数据源：调度器按 last_run_at + interval 算出的应采集候选。 */
+export interface SchedulerDueSource {
+  key: string;
+  name: string;
+  lastRunAt: string | null;
+  /** 应采集时间（ISO） */
+  dueAt: string;
+  intervalMinutes: number;
+}
+
+/** 调度器状态快照（GET /tasks/status 与 /system/info 内的 scheduler 字段）。 */
 export interface SchedulerStatus {
-  enabled?: boolean;
-  running?: boolean;
-  isRunning?: boolean;
-  runningRunId?: number | null;
-  enabledSources?: number;
-  totalSources?: number;
-  lastRunAt?: string | null;
-  nextDueSources?: SchedulerDueSource[];
-  dueSources?: SchedulerDueSource[];
+  /** 调度器是否启动 */
+  enabled: boolean;
+  jobs: SchedulerJobStatus[];
+  /** 当前运行中的采集任务 id，无则为 null */
+  runningRunId: number | null;
+  /** 前 10 个到期数据源 */
+  dueSources: SchedulerDueSource[];
 }
 
 /** 采集任务触发结果。 */
@@ -188,7 +199,11 @@ export const tasksApi = {
 // ---------------------------------------------------------------------------
 export const reportsApi = {
   list(query: ReportListQuery): Promise<Paginated<ReportDTO>> {
-    return request<Paginated<ReportDTO>>({ url: '/reports', method: 'get', params: cleanParams({ ...query }) });
+    return request<Paginated<ReportDTO>>({
+      url: '/reports',
+      method: 'get',
+      params: cleanParams({ ...query }),
+    });
   },
   generate(input: GenerateReportInput): Promise<ReportDTO> {
     return request<ReportDTO>({ url: '/reports/generate', method: 'post', data: input });
@@ -201,11 +216,7 @@ export const reportsApi = {
   },
   download(id: number, format: 'md' | 'html', type: ReportType): Promise<void> {
     const suffix = format === 'md' ? 'md' : 'html';
-    return downloadFile(
-      `/reports/${id}/download`,
-      { format },
-      `Knetsec_Ai-${type}-${id}.${suffix}`,
-    );
+    return downloadFile(`/reports/${id}/download`, { format }, `Knetsec_Ai-${type}-${id}.${suffix}`);
   },
 };
 
@@ -235,7 +246,11 @@ export interface AuditLogQuery {
 
 export const auditApi = {
   list(query: AuditLogQuery): Promise<Paginated<AuditLogDTO>> {
-    return request<Paginated<AuditLogDTO>>({ url: '/audit-logs', method: 'get', params: cleanParams({ ...query }) });
+    return request<Paginated<AuditLogDTO>>({
+      url: '/audit-logs',
+      method: 'get',
+      params: cleanParams({ ...query }),
+    });
   },
 };
 
@@ -243,21 +258,31 @@ export const auditApi = {
 // 系统信息
 // ---------------------------------------------------------------------------
 
-/** 系统信息（GET /system/info）宽松视图，字段按后端实际实现可选。 */
+/**
+ * 系统信息（GET /system/info）。
+ *
+ * 与后端 modules/system/index.ts 的 SystemInfoDTO 一一对齐；展示层只使用 version /
+ * uptimeSeconds / counts.sourcesEnabled / scheduler，其余字段保留给后续「系统信息」页扩展。
+ */
 export interface SystemInfo {
-  name?: string;
-  version?: string;
-  nodeVersion?: string;
-  platform?: string;
-  startedAt?: string;
-  uptimeSeconds?: number;
-  uptime?: number;
-  dbSizeBytes?: number;
-  dbSize?: number;
-  items?: number;
-  sources?: number;
-  reports?: number;
-  scheduler?: SchedulerStatus;
+  appName: string;
+  version: string;
+  env: string;
+  nodeVersion: string;
+  startedAt: string;
+  uptimeSeconds: number;
+  dataDir: string;
+  dbPath: string;
+  /** SQLite 主库文件大小（字节） */
+  dbSizeBytes: number;
+  counts: {
+    items: number;
+    sources: number;
+    sourcesEnabled: number;
+    reports: number;
+    runs: number;
+  };
+  scheduler: SchedulerStatus;
 }
 
 export const systemApi = {

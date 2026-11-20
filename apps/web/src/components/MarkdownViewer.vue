@@ -28,6 +28,7 @@ const html = computed(() => {
 <template>
   <div v-loading="props.loading" class="markdown-viewer">
     <el-empty v-if="!html" description="暂无报告内容" :image-size="96" />
+    <!-- eslint-disable-next-line vue/no-v-html -- html 已由 DOMPurify.sanitize 消毒，见上方 computed -->
     <article v-else class="markdown-body" v-html="html" />
   </div>
 </template>

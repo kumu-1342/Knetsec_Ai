@@ -56,8 +56,8 @@ const rules: FormRules<SourceFormModel> = {
   key: [
     { required: true, message: '请输入数据源 key', trigger: 'blur' },
     {
-      pattern: /^[a-z0-9][a-z0-9-]*$/,
-      message: '仅限小写字母、数字与中划线，且以字母或数字开头',
+      pattern: /^[a-z0-9][a-z0-9-]{1,63}$/,
+      message: '仅限小写字母、数字与中划线，2-64 位且以字母或数字开头',
       trigger: 'blur',
     },
   ],
@@ -81,7 +81,11 @@ function resetForm(): void {
   form.intervalMinutes = source?.intervalMinutes ?? props.defaultInterval;
   form.priority = source?.priority ?? 100;
   form.enabled = source?.enabled ?? true;
-  configText.value = JSON.stringify(source?.config ?? JSON.parse(ADAPTER_CONFIG_TEMPLATES[form.adapter]), null, 2);
+  configText.value = JSON.stringify(
+    source?.config ?? JSON.parse(ADAPTER_CONFIG_TEMPLATES[form.adapter]),
+    null,
+    2,
+  );
   configError.value = '';
   formRef.value?.clearValidate();
 }
@@ -213,7 +217,13 @@ async function handleSubmit(): Promise<void> {
         </el-col>
         <el-col :span="8">
           <el-form-item label="采集间隔" prop="intervalMinutes">
-            <el-input-number v-model="form.intervalMinutes" :min="5" :max="10080" :step="30" class="full-width" />
+            <el-input-number
+              v-model="form.intervalMinutes"
+              :min="5"
+              :max="10080"
+              :step="30"
+              class="full-width"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="8">

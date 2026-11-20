@@ -35,7 +35,21 @@ const rules: FormRules<PasswordForm> = {
   oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 8, max: 64, message: '密码长度需为 8-64 位', trigger: 'blur' },
+    {
+      validator: (_rule, value: string, callback: (error?: Error) => void) => {
+        if (value.length < 8 || value.length > 64) {
+          callback(new Error('密码长度需为 8-64 位'));
+          return;
+        }
+        // 与服务端 validatePasswordStrength 保持一致，避免提交后才报错。
+        if (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) {
+          callback(new Error('密码需同时包含字母和数字'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },

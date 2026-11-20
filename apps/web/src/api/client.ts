@@ -82,6 +82,11 @@ instance.interceptors.response.use(
     const code = failure && failure.success === false ? failure.error.code : 'NETWORK_ERROR';
 
     if (status === 401) {
+      // 登录接口的 401 表示账号密码错误，由登录页行内展示，不能当作会话过期处理。
+      const isLoginRequest = error.config?.url?.includes('/auth/login') ?? false;
+      if (isLoginRequest) {
+        return Promise.reject(new ApiRequestError(message, 'UNAUTHORIZED', status));
+      }
       redirectToLogin();
       ElMessage.error('登录已过期，请重新登录');
       return Promise.reject(new ApiRequestError('登录已过期，请重新登录', 'UNAUTHORIZED', status));
@@ -162,7 +167,8 @@ export async function downloadFile(
 ): Promise<void> {
   const response = await instance.get<Blob>(url, { params, responseType: 'blob' });
   const contentType = String(response.headers['content-type'] ?? '');
-  const filename = parseFilename(response.headers['content-disposition'] as string | undefined) ?? fallbackName;
+  const filename =
+    parseFilename(response.headers['content-disposition'] as string | undefined) ?? fallbackName;
 
   if (contentType.includes('application/json')) {
     const text = await response.data.text();
@@ -174,10 +180,19 @@ export async function downloadFile(
     }
     const envelope = parsed as Partial<ApiSuccess<unknown>> & Partial<ApiFailure>;
     if (envelope.success === false) {
-      throw new ApiRequestError(envelope.error?.message ?? '导出失败', envelope.error?.code ?? 'INTERNAL_ERROR', 400);
+      throw new ApiRequestError(
+        envelope.error?.message ?? '导出失败',
+        envelope.error?.code ?? 'INTERNAL_ERROR',
+        400,
+      );
     }
-    const payload = envelope.success === true ? envelope.data : parsed;
-    saveBlob(new Blob([payloadToText(payload)], { type: 'text/plain;charset=utf-8' }), filename);
+    if (envelope.success === true) {
+      saveBlob(new Blob([payloadToText(envelope.data)], { type: 'text/plain;charset=utf-8' }), filename);
+      return;
+    }
+    // 不是统一信封（例如 /items/export?format=json 直接返回数组）：原样保存服务端文本，
+    // 既保留服务端格式，也避免二次序列化改变字段顺序。
+    saveBlob(new Blob([text], { type: contentType || 'application/json;charset=utf-8' }), filename);
     return;
   }
 

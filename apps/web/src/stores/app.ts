@@ -16,14 +16,17 @@ export const useAppStore = defineStore('app', () => {
 
   /** 版本号：优先取服务端上报，失败时退回构建期常量。 */
   const version = computed(() => systemInfo.value?.version ?? APP_VERSION);
-  const running = computed(() => systemInfo.value?.scheduler?.running === true);
-  const enabledSources = computed(
-    () => systemInfo.value?.scheduler?.enabledSources ?? systemInfo.value?.sources ?? 0,
+  /** 是否有采集任务正在执行（runningRunId 非空）。 */
+  const running = computed(
+    () =>
+      systemInfo.value?.scheduler?.runningRunId !== null &&
+      systemInfo.value?.scheduler?.runningRunId !== undefined,
   );
+  const enabledSources = computed(() => systemInfo.value?.counts?.sourcesEnabled ?? 0);
 
   /** 服务端运行时长文案（秒 → 天/小时/分钟）。 */
   const uptimeText = computed(() => {
-    const seconds = systemInfo.value?.uptimeSeconds ?? systemInfo.value?.uptime;
+    const seconds = systemInfo.value?.uptimeSeconds;
     if (!seconds || seconds <= 0) return '-';
     if (seconds < 60) return `${seconds} 秒`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟`;
