@@ -46,7 +46,7 @@ export function toPaginated<T>(items: T[], total: number, params: PageParams): P
 export function parseId(raw: unknown, label = 'id'): number {
   const value = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`INVALID_ID:${label}`);
+    throw badRequest(`${label} 必须是正整数`);
   }
   return value;
 }

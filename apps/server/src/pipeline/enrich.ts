@@ -22,7 +22,8 @@ export const MAX_SUMMARY_LENGTH = 600;
 export const MAX_RAW_BYTES = 16 * 1024;
 
 /** PoC / 在野利用表述（命中加分，用于 importance 排序）。 */
-const POC_PATTERN = /(proof[ -]?of[ -]?concept|\bpoc\b|\bexploit(?:ed|s|ing)?\b|利用代码|复现|在野利用|weaponized)/i;
+const POC_PATTERN =
+  /(proof[ -]?of[ -]?concept|\bpoc\b|\bexploit(?:ed|s|ing)?\b|利用代码|复现|在野利用|weaponized)/i;
 
 /** 富化选项。 */
 export interface EnrichOptions {
@@ -59,12 +60,36 @@ function maxSeverity(a: Severity, b: Severity): Severity {
   return SEVERITY_WEIGHT[a] >= SEVERITY_WEIGHT[b] ? a : b;
 }
 
+/** 判断关键词是否为纯 ASCII（英文/符号）。 */
+function isAsciiKeyword(keyword: string): boolean {
+  return /^[\x20-\x7E]+$/.test(keyword);
+}
+
+/**
+ * 关键词命中判断。
+ *
+ * 为什么不能一律 includes：'rag' 会命中 "storage"、'agent' 会命中 "management"，
+ * 导致无关漏洞被误标 AI 安全。纯 ASCII 且首尾为字母数字的关键词按词边界匹配；
+ * 中文没有词边界概念，仍用 includes；以符号结尾的关键词（如 'gpt-'）退化为 includes。
+ */
+function keywordMatches(haystack: string, keyword: string): boolean {
+  const needle = keyword.trim().toLowerCase();
+  if (!needle) return false;
+  if (!isAsciiKeyword(needle) || !/^[a-z0-9].*[a-z0-9]$/i.test(needle)) {
+    return haystack.includes(needle);
+  }
+  const escaped = needle.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(haystack);
+}
+
 /** 计算 AI 安全标签：先沿用条目已有标签，再按词典命中追加。 */
 function applyAiTags(item: NormalizedItem, settings: AppSettings): { tags: string[]; hit: boolean } {
   const haystack = `${item.title} ${item.summary ?? ''}`.toLowerCase();
   const tags = new Set(item.tags);
   const allowedCustom = new Set(settings.aiSecurityKeywords.map((word) => word.toLowerCase()));
-  const taxonomyWords = new Set(AI_SECURITY_TAXONOMY.flatMap((entry) => entry.keywords.map((word) => word.toLowerCase())));
+  const taxonomyWords = new Set(
+    AI_SECURITY_TAXONOMY.flatMap((entry) => entry.keywords.map((word) => word.toLowerCase())),
+  );
 
   let hit = false;
   for (const entry of AI_SECURITY_TAXONOMY) {
@@ -72,7 +97,7 @@ function applyAiTags(item: NormalizedItem, settings: AppSettings): { tags: strin
     const words = entry.keywords.filter(
       (word) => allowedCustom.size === 0 || allowedCustom.has(word.toLowerCase()),
     );
-    if (words.some((word) => haystack.includes(word.toLowerCase()))) {
+    if (words.some((word) => keywordMatches(haystack, word))) {
       tags.add(entry.tag);
       hit = true;
     }
@@ -80,7 +105,7 @@ function applyAiTags(item: NormalizedItem, settings: AppSettings): { tags: strin
 
   // 管理员自定义的扩展词（不在内置词典中）命中时打通用标签，避免「配了但不生效」的困惑
   for (const word of allowedCustom) {
-    if (word.length >= 2 && !taxonomyWords.has(word) && haystack.includes(word)) {
+    if (word.length >= 2 && !taxonomyWords.has(word) && keywordMatches(haystack, word)) {
       tags.add('ai-security');
       hit = true;
     }
@@ -104,9 +129,8 @@ function computeImportance(
   if (item.isKev) score += 20;
 
   const haystack = `${item.title} ${item.summary ?? ''}`.toLowerCase();
-  const watchHit = settings.watchKeywords.some(
-    (keyword) => keyword.length > 0 && haystack.includes(keyword.toLowerCase()),
-  );
+  // 关注词同样按词边界匹配：'cve' 不应命中 'cvescan'，'rag' 不应命中 'storage'
+  const watchHit = settings.watchKeywords.some((keyword) => keywordMatches(haystack, keyword));
   if (watchHit) score += 15;
 
   const publishedMs = Date.parse(item.publishedAt);
@@ -211,7 +235,8 @@ export async function enrichItemWithLlm(
         messages: [
           {
             role: 'system',
-            content: '你是网络安全情报编辑。请用简体中文写不超过 80 字的摘要，并给出一句影响面判断，不要寒暄，不要 Markdown。',
+            content:
+              '你是网络安全情报编辑。请用简体中文写不超过 80 字的摘要，并给出一句影响面判断，不要寒暄，不要 Markdown。',
           },
           {
             role: 'user',
@@ -227,10 +252,7 @@ export async function enrichItemWithLlm(
     const text = extractLlmText(payload);
     if (text) enriched.summary = clip(text, MAX_SUMMARY_LENGTH);
   } catch (error) {
-    options.logger?.warn(
-      { err: String(error), title: item.title },
-      'LLM 摘要增强失败，已跳过（不影响采集）',
-    );
+    options.logger?.warn({ err: String(error), title: item.title }, 'LLM 摘要增强失败，已跳过（不影响采集）');
   } finally {
     clearTimeout(timer);
   }

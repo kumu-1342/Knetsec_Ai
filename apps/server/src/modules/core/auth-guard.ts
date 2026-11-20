@@ -9,6 +9,8 @@
  * - @fastify/jwt 的 payload/user：统一签名与校验的载荷结构。
  */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+// 显式加载 @fastify/jwt 的类型扩展（它通过 declare module 'fastify' 补充 jwt / jwtVerify / user）
+import '@fastify/jwt';
 import type { AuthUser, UserRole } from '@knetsec/shared';
 import { forbidden, unauthorized } from '../../infra/errors.js';
 import type { AppContext } from './context.js';
@@ -19,13 +21,6 @@ export interface JwtPayload {
   username: string;
   role: UserRole;
   displayName: string;
-}
-
-declare module '@fastify/jwt' {
-  interface FastifyJWT {
-    payload: JwtPayload;
-    user: JwtPayload;
-  }
 }
 
 declare module 'fastify' {

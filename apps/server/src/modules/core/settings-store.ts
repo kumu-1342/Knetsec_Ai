@@ -26,7 +26,9 @@ function normalizeValue<K extends SettingsKey>(key: K, value: unknown): AppSetti
     return list as unknown as AppSettings[K];
   }
   if (typeof fallback === 'number') {
-    return (typeof value === 'number' && Number.isFinite(value) ? value : undefined) as unknown as AppSettings[K];
+    return (typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : undefined) as unknown as AppSettings[K];
   }
   if (typeof fallback === 'boolean') {
     return (typeof value === 'boolean' ? value : undefined) as unknown as AppSettings[K];
@@ -97,11 +99,10 @@ export class SettingsStore {
         if (!(key in patch)) continue;
         const value = patch[key];
         if (value === undefined) continue;
-        this.db.run('INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at', [
-          key,
-          JSON.stringify(value),
-          now,
-        ]);
+        this.db.run(
+          'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at',
+          [key, JSON.stringify(value), now],
+        );
       }
     });
     this.logger.info({ keys: Object.keys(patch) }, '系统设置已更新');

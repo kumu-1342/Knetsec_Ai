@@ -25,7 +25,11 @@ export function buildFailure(
   message: string,
   details?: unknown,
 ): ApiFailure {
-  return { success: false, error: { code, message, ...(details === undefined ? {} : { details }) }, requestId: request.id };
+  return {
+    success: false,
+    error: { code, message, ...(details === undefined ? {} : { details }) },
+    requestId: request.id,
+  };
 }
 
 /** 发送失败信封。 */

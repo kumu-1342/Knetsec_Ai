@@ -86,7 +86,11 @@ export class AuditService {
       [...params, query.page.pageSize, query.page.offset],
     );
 
-    return toPaginated(rows.map((row) => this.mapRow(row)), total, query.page);
+    return toPaginated(
+      rows.map((row) => this.mapRow(row)),
+      total,
+      query.page,
+    );
   }
 
   private mapRow(row: AuditRow): AuditLogDTO {

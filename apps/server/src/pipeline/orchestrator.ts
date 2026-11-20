@@ -186,7 +186,11 @@ export class CollectPipeline {
   }
 
   /** 实际执行流程（拆出来便于 run() 统一兜底）。 */
-  private async execute(runId: number, sourceKeys: string[] | undefined, startedAt: Date): Promise<RunSummary> {
+  private async execute(
+    runId: number,
+    sourceKeys: string[] | undefined,
+    startedAt: Date,
+  ): Promise<RunSummary> {
     const { db, logger } = this.deps;
     const now = this.deps.now?.() ?? startedAt;
     const settings = this.deps.getSettings();
@@ -205,7 +209,9 @@ export class CollectPipeline {
 
     const sources = this.loadSources(sourceKeys);
     flushRun({ status: 'running', startedAt: startedAt.toISOString(), sourcesTotal: sources.length });
-    log(`开始采集，共 ${sources.length} 个数据源${sourceKeys?.length ? `（指定：${sourceKeys.join(', ')}）` : '（全部启用源）'}`);
+    log(
+      `开始采集，共 ${sources.length} 个数据源${sourceKeys?.length ? `（指定：${sourceKeys.join(', ')}）` : '（全部启用源）'}`,
+    );
 
     let sourcesOk = 0;
     let sourcesFailed = 0;
@@ -220,10 +226,12 @@ export class CollectPipeline {
 
       try {
         const adapter = (this.deps.collectorFactory ?? createCollector)(source);
-        const http = this.deps.httpFactory?.(collectorLogger) ?? new HttpClient({
-          proxyUrl: this.deps.config.httpProxy,
-          logger: collectorLogger,
-        });
+        const http =
+          this.deps.httpFactory?.(collectorLogger) ??
+          new HttpClient({
+            proxyUrl: this.deps.config.httpProxy,
+            logger: collectorLogger,
+          });
 
         const ctx: CollectorContext = {
           source,
@@ -241,7 +249,9 @@ export class CollectPipeline {
         );
 
         if (result.warnings && result.warnings.length > 0) {
-          log(`[${source.key}] 适配器告警 ${result.warnings.length} 条：${result.warnings.slice(0, 3).join('；')}`);
+          log(
+            `[${source.key}] 适配器告警 ${result.warnings.length} 条：${result.warnings.slice(0, 3).join('；')}`,
+          );
         }
 
         // 逐条归一化：单条结构异常只跳过该条（容错要求）
@@ -364,7 +374,7 @@ export class CollectPipeline {
 
     const finishedAt = new Date();
     const status: RunStatus =
-      sources.length === 0 || sourcesOk === 0 && sourcesFailed === 0
+      sources.length === 0 || (sourcesOk === 0 && sourcesFailed === 0)
         ? 'success'
         : sourcesOk === 0
           ? 'failed'
@@ -381,7 +391,9 @@ export class CollectPipeline {
       itemsDuplicate,
       error: errors.length > 0 ? errors.join('；').slice(0, 2000) : null,
     });
-    log(`采集结束：成功 ${sourcesOk} 源、失败 ${sourcesFailed} 源、新增 ${itemsNew} 条、去重 ${itemsDuplicate} 条，状态 ${status}`);
+    log(
+      `采集结束：成功 ${sourcesOk} 源、失败 ${sourcesFailed} 源、新增 ${itemsNew} 条、去重 ${itemsDuplicate} 条，状态 ${status}`,
+    );
 
     return {
       runId,
