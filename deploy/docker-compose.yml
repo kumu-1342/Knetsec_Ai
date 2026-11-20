@@ -1,0 +1,71 @@
+# ============================================================================
+# Knetsec_Ai Docker Compose（可选部署方式）
+#
+# 组成：
+#   server —— Fastify API + 调度器 + 采集流水线（node:24-alpine，非 root）
+#   web    —— nginx 托管面板静态文件，并把 /api 反代到 server
+#
+# 使用（在 deploy 目录执行）：
+#   Copy-Item .env.example .env     # 首次：按需修改管理员密码/Token
+#   docker compose up -d --build
+#   浏览器打开 http://127.0.0.1:8000
+# 说明：
+#   - 数据卷挂载到仓库根 data/ 目录（../data），容器重建不丢数据；
+#   - 只把 web 的 80 暴露到宿主机（默认 8000），server 仅在内部网络可达；
+#   - 本机 Windows 下 Docker Desktop 需能读 D:\Knetsec_Ai 目录。
+# ============================================================================
+
+name: knetsec-ai
+
+services:
+  server:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.server
+    image: knetsec-ai-server:1.0.0
+    container_name: knetsec-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      KNETSEC_HOST: 0.0.0.0
+      KNETSEC_PORT: '8787'
+      KNETSEC_DATA_DIR: /app/data
+      KNETSEC_SCHEDULER: ${KNETSEC_SCHEDULER:-on}
+      # 留空则自动生成并持久化到 data/.jwt-secret；多实例部署时必须显式指定
+      KNETSEC_JWT_SECRET: ${KNETSEC_JWT_SECRET:-}
+      KNETSEC_HTTP_PROXY: ${KNETSEC_HTTP_PROXY:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      NVD_API_KEY: ${NVD_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - ../data:/app/data
+    expose:
+      - '8787'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8787/health').then(function (r) { process.exit(r.ok ? 0 : 1); }).catch(function () { process.exit(1); })",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    image: knetsec-ai-web:1.0.0
+    container_name: knetsec-web
+    restart: unless-stopped
+    ports:
+      - '${WEB_PORT:-8000}:80'
+    depends_on:
+      server:
+        condition: service_healthy

@@ -1,0 +1,89 @@
+# syntax=docker/dockerfile:1.7
+# ============================================================================
+# Knetsec_Ai 服务端镜像（多阶段构建）
+#
+# 特点：
+# 1. 构建阶段安装全部依赖并编译 shared / server / web，运行阶段只保留生产依赖
+#    （npm ci --omit=dev），镜像更小、攻击面更小；
+# 2. 使用 node:24-alpine：内置 node:sqlite 与全局 fetch，无需原生编译工具链；
+# 3. 以非 root 用户 knetsec 运行；数据目录 /app/data 通过卷持久化；
+# 4. 内置 HEALTHCHECK，命中 GET /health（含数据库连通性检查）。
+#
+# 构建（在仓库根 D:\Knetsec_Ai 执行；注意末尾的上下文是 "."）：
+#   docker build -f deploy/Dockerfile.server -t knetsec-ai-server:1.0.0 .
+# 或直接：
+#   docker compose -f deploy/docker-compose.yml build server
+# ============================================================================
+
+# ---------- 阶段 1：构建（全部依赖 + 编译产物） ----------
+FROM node:24-alpine AS builder
+WORKDIR /app
+ENV npm_config_update_notifier=false \
+    npm_config_fund=false
+
+# 先复制各 workspace 的 manifest，命中 Docker 层缓存：只有依赖清单变化才重新 npm ci
+COPY package.json package-lock.json* ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/server/package.json apps/server/
+COPY apps/web/package.json apps/web/
+# --ignore-scripts：根 postinstall 会在源码复制前触发 build:shared，此处先跳过，
+# 等 packages/shared 源码复制后再显式构建（见下方 RUN）。
+RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
+
+COPY tsconfig.base.json ./
+COPY packages/shared packages/shared
+COPY apps/server apps/server
+COPY apps/web apps/web
+
+# shared 必须先构建（server/web 通过 @knetsec/shared 引用其 dist）
+RUN npm run build:shared \
+    && npm -w @knetsec/server run build \
+    && npm -w @knetsec/web run build
+
+# ---------- 阶段 2：仅生产依赖 ----------
+FROM node:24-alpine AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/server/package.json apps/server/
+COPY apps/web/package.json apps/web/
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --ignore-scripts; else npm install --omit=dev --ignore-scripts; fi \
+    && npm cache clean --force
+
+# ---------- 阶段 3：运行 ----------
+FROM node:24-alpine AS runner
+WORKDIR /app
+
+# 容器内必须监听 0.0.0.0，宿主机只暴露给 nginx / 本机
+ENV NODE_ENV=production \
+    KNETSEC_HOST=0.0.0.0 \
+    KNETSEC_PORT=8787 \
+    KNETSEC_DATA_DIR=/app/data \
+    LOG_LEVEL=info \
+    TZ=Asia/Shanghai
+
+# 非 root 运行；预先建好数据目录并授权（bind mount 到宿主机时 Windows 下无影响）
+RUN addgroup -S knetsec \
+    && adduser -S -G knetsec -h /app knetsec \
+    && mkdir -p /app/data/reports /app/data/logs \
+    && chown -R knetsec:knetsec /app/data
+
+COPY --from=prod-deps --chown=knetsec:knetsec /app/node_modules ./node_modules
+COPY --chown=knetsec:knetsec package.json ./package.json
+COPY --from=builder --chown=knetsec:knetsec /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder --chown=knetsec:knetsec /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder --chown=knetsec:knetsec /app/apps/server/package.json ./apps/server/package.json
+COPY --from=builder --chown=knetsec:knetsec /app/apps/server/dist ./apps/server/dist
+# 面板构建产物同时放进镜像：即使不部署 nginx，直接访问 8787 也能打开管理面板
+COPY --from=builder --chown=knetsec:knetsec /app/apps/web/dist ./apps/web/dist
+
+USER knetsec
+EXPOSE 8787
+VOLUME ["/app/data"]
+
+# 健康检查：node 内置 fetch，失败退出码 1；start-period 留给迁移与种子
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.KNETSEC_PORT || '8787') + '/health').then(function (r) { process.exit(r.ok ? 0 : 1); }).catch(function () { process.exit(1); })"
+
+# 直接用 node 启动编译产物，不经过 npm，减少信号转发问题
+CMD ["node", "apps/server/dist/index.js"]

@@ -1,0 +1,23 @@
+# Docker 构建上下文排除清单（仓库根作为上下文时生效）
+# 依赖与构建产物在镜像内重新安装/编译，不需要打进上下文
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# 运行期数据（数据库、报告、日志、JWT 密钥）绝不进镜像
+data
+data/**
+deploy/data
+
+# 文档与开发辅助文件
+docs
+.vscode
+.git
+.gitignore
+README.md
+*.log
+
+# 系统与编辑器临时文件
+.DS_Store
+Thumbs.db
+.idea
