@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Server: 启动（tsx 调试）",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "tsx",
+        "apps/server/src/index.ts"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "development",
+        "KNETSEC_PORT": "8787"
+      },
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_modules>/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Server: 启动（生产构建）",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/server/dist/index.js",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "production",
+        "KNETSEC_PORT": "8787"
+      },
+      "console": "integratedTerminal",
+      "preLaunchTask": "构建全部"
+    },
+    {
+      "name": "Server: 附加到 9229",
+      "type": "node",
+      "request": "attach",
+      "port": 9229
+    }
+  ]
+}

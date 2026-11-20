@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "Vue.volar",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.powershell",
+    "humao.rest-client",
+    "eamodio.gitlens",
+    "ms-azuretools.vscode-docker"
+  ]
+}

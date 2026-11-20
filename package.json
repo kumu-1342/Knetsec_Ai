@@ -1,0 +1,40 @@
+{
+  "name": "knetsec-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Knetsec_Ai — AI 安全与网络安全实时情报采集、自动周报与管理面板平台",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run build:shared",
+    "build:shared": "npm -w @knetsec/shared run build",
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "npm -w @knetsec/server run dev",
+    "dev:web": "npm -w @knetsec/web run dev",
+    "build": "npm run build:shared && npm -w @knetsec/server run build && npm -w @knetsec/web run build",
+    "start": "node apps/server/dist/index.js",
+    "test": "npm -w @knetsec/server run test",
+    "typecheck": "npm run build:shared && npm -w @knetsec/server run typecheck && npm -w @knetsec/web run typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "seed": "npm -w @knetsec/server run seed",
+    "verify:sources": "node scripts/verify-sources.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-vue": "^9.32.0",
+    "prettier": "^3.4.2",
+    "typescript-eslint": "^8.22.0",
+    "vue-eslint-parser": "^9.4.3"
+  }
+}
