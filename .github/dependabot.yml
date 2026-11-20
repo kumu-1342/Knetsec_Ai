@@ -1,0 +1,18 @@
+# Dependabot：每周检查 npm 依赖更新，自动开 PR（会触发 CI）
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+    ignore:
+      # 主版本升级可能引入破坏性变更，人工评估后再升
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]

@@ -2,6 +2,7 @@
 
 > **AI 安全 × 网络安全实时情报平台**：多源采集 → 自动去重打标 → 自动周报 → 中文管理面板。
 
+[![CI](https://github.com/kumu-1342/Knetsec_Ai/actions/workflows/ci.yml/badge.svg)](https://github.com/kumu-1342/Knetsec_Ai/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/Node.js-%3E%3D22.5-339933)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6)]()
 [![Fastify](https://img.shields.io/badge/Fastify-5-000000)]()
@@ -104,4 +105,6 @@ Knetsec_Ai/
 
 ## License
 
-内部项目，未授权不得对外分发。
+[MIT](LICENSE) © 2026 kumu-1342
+
+本项目仅供学习与**授权范围内**的安全研究使用；请遵守当地法律法规，勿将工具用于未授权测试。
