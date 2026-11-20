@@ -7,7 +7,7 @@
  * - severity 排序用 CASE 权重（critical > high > ...），而不是字典序；
  * - watched 表示命中 settings.watchKeywords（「重点关注」）。
  */
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import {
   ITEM_CATEGORIES,
@@ -18,7 +18,7 @@ import {
   SEVERITY_WEIGHT,
 } from '@knetsec/shared';
 import type { AppSettings, ItemDTO, ItemSortField, Paginated } from '@knetsec/shared';
-import { badRequest, notFound } from '../../infra/errors.js';
+import { notFound } from '../../infra/errors.js';
 import { createGuards, currentUser } from '../core/auth-guard.js';
 import type { AppContext } from '../core/context.js';
 import { replyOk } from '../core/envelope.js';
@@ -167,31 +167,6 @@ function sortExpression(field: ItemSortField): string {
 function findItem(ctx: AppContext, id: number): ItemDTO | undefined {
   const row = ctx.db.get<ItemRow>(`SELECT ${ITEM_COLUMNS} FROM items WHERE id = ?`, [id]);
   return row ? mapItemRow(row) : undefined;
-}
-
-/** 读取分页后的列表（列表与导出复用同一套筛选）。 */
-function queryItems(
-  ctx: AppContext,
-  query: ItemListQuery,
-  settings: AppSettings,
-  pagination?: { limit: number; offset: number },
-): Paginated<ItemDTO> {
-  const { where, params } = buildFilters(query, settings);
-  const sortField = sortExpression(query.sort ?? 'importance');
-  const order = query.order === 'asc' ? 'ASC' : 'DESC';
-  const total = ctx.db.scalar<number>(`SELECT COUNT(1) FROM items${where}`, params) ?? 0;
-
-  const limit = pagination?.limit ?? 20;
-  const offset = pagination?.offset ?? 0;
-  const rows = ctx.db.all<ItemRow>(
-    `SELECT ${ITEM_COLUMNS} FROM items${where} ORDER BY ${sortField} ${order}, id DESC LIMIT ? OFFSET ?`,
-    [...params, limit, offset],
-  );
-  return toPaginated(
-    rows.map(mapItemRow),
-    total,
-    pagination ? parsePage({ page: Math.floor(offset / limit) + 1, pageSize: limit }) : parsePage({}),
-  );
 }
 
 /** CSV 单元格转义：包含逗号/引号/换行时用双引号包裹并转义内部引号。 */

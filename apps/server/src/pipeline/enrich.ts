@@ -78,7 +78,7 @@ function keywordMatches(haystack: string, keyword: string): boolean {
   if (!isAsciiKeyword(needle) || !/^[a-z0-9].*[a-z0-9]$/i.test(needle)) {
     return haystack.includes(needle);
   }
-  const escaped = needle.replace(/[.*+?^$\{\}()|[\]\\]/g, '\\$&');
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(haystack);
 }
 

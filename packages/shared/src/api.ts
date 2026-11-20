@@ -131,7 +131,8 @@ export interface ItemListQuery {
   order?: 'asc' | 'desc';
 }
 
-export interface ItemListResult extends Paginated<ItemDTO> {}
+/** 情报列表响应：Paginated<ItemDTO> 的语义别名，便于前端命名。 */
+export type ItemListResult = Paginated<ItemDTO>;
 
 export interface UpdateItemInput {
   isRead?: boolean;

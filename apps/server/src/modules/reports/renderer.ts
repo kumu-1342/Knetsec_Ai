@@ -57,12 +57,6 @@ function isTableSeparator(line: string): boolean {
   return cells.length > 0 && cells.every((cell) => /^:?-{2,}:?$/.test(cell));
 }
 
-/** 列表项解析结果。 */
-interface ListItem {
-  ordered: boolean;
-  text: string;
-}
-
 /** Markdown → HTML 正文（支持标题/列表/表格/引用/分隔线/段落）。 */
 export function markdownToHtml(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');

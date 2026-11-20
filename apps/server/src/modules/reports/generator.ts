@@ -67,10 +67,42 @@ function formatDateTime(iso: string | null): string {
   return `${formatReportDate(iso)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/** 单行化 + 限制长度 + 表格竖线转义，防止外部标题破坏 Markdown 结构。 */
+/**
+ * 清洗上游文本中的 Markdown 语法。
+ *
+ * 为什么需要：GitHub Advisory 的 summary 里常带 "### Impact""**bold**" 等 Markdown，
+ * 直接写进报告会出现裸露的 ### 与 **，既影响可读性，也可能破坏报告的标题层级。
+ * 这里只做保守清理（代码块/行内代码/强调/标题/链接/分隔线），不改变正文语义。
+ */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^\s*[-*_]{3,}\s*$/gm, ' ')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * 单行化 + 去 Markdown + 转义 HTML 特殊字符 + 限制长度。
+ *
+ * 为什么要转义 < 和 >：NVD 的标题常带版本范围（如 ">= V11.15.0 = V11.12.6 < V11.12.7"），
+ * 裸的 < 会被 Markdown 解析器当成 HTML 标签起始，导致加粗/链接解析错乱（实测踩过）。
+ * 转义为 &lt;/&gt; 后，Markdown 阅读器与 HTML 渲染都能正确显示。
+ */
 function inlineText(text: string | null | undefined, maxLength = 200): string {
   if (!text) return '';
-  return text.replace(/\s+/g, ' ').replace(/\|/g, '\\|').trim().slice(0, maxLength);
+  return stripMarkdown(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\|/g, '\\|')
+    .slice(0, maxLength);
 }
 
 /** 摘要压缩：去掉链接/多余空白，按句号截断到指定长度。 */

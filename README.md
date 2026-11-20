@@ -81,6 +81,19 @@ Knetsec_Ai/
 | [08 项目全生命周期落地报告](docs/08-项目全生命周期落地报告.md) | 从 0 到上线的全过程 |
 | [09 API 接口文档](docs/09-API接口文档.md) | 逐端点参数与示例 |
 
+## 界面预览
+
+| 仪表盘 | 情报中心 |
+|---|---|
+| ![仪表盘](docs/assets/dashboard.png) | ![情报中心](docs/assets/items.png) |
+
+| 报告预览 | 数据源管理 |
+|---|---|
+| ![报告预览](docs/assets/report-preview.png) | ![数据源](docs/assets/sources.png) |
+
+> 更多截图见 [docs/assets](docs/assets/)；两篇核心报告另提供 Word 版：
+> [01 可行性研究报告](docs/exports/Knetsec_Ai-01-可行性研究报告.docx) ｜ [08 项目全生命周期落地报告](docs/exports/Knetsec_Ai-08-项目全生命周期落地报告.docx)
+
 ## 安全与合规
 
 - 仅聚合**公开披露**的安全信息，只保存标题、摘要与原文链接，不全文转载；

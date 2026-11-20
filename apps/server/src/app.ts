@@ -130,6 +130,18 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   app.decorate('knetsec', ctx);
 
   // -------------------------------------------------------------------------
+  // 基础安全响应头：防止 MIME 嗅探、点击劫持与 Referer 泄露。
+  // 说明：面板默认仅监听 127.0.0.1；公网部署时由 nginx 追加 CSP / HSTS 等更严格策略。
+  // -------------------------------------------------------------------------
+  app.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('x-frame-options', 'DENY');
+    reply.header('referrer-policy', 'no-referrer');
+    reply.header('x-xss-protection', '0');
+    return payload;
+  });
+
+  // -------------------------------------------------------------------------
   // 统一错误处理：所有异常都转换成契约信封，500 不泄露堆栈
   // -------------------------------------------------------------------------
   app.setErrorHandler((error: FastifyError, request, reply) => {
