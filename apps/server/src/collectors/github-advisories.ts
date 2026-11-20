@@ -15,13 +15,11 @@ import { z } from 'zod';
 import type { CollectorAdapter, CollectorContext, CollectorResult, RawItem, Severity } from '@knetsec/shared';
 import { upstreamError } from '../infra/errors.js';
 import {
-  clampInt,
   DEFAULT_REQUEST_INTERVAL_MS,
   githubHeaders,
   isRecord,
   plainText,
   sleep,
-  stringList,
   suggestAiCategory,
   toArray,
   toIsoOrUndefined,

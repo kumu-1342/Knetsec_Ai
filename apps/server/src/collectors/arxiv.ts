@@ -17,7 +17,6 @@ import {
   parseXml,
   plainText,
   sleep,
-  stringList,
   textOf,
   toArray,
   toIsoOrUndefined,

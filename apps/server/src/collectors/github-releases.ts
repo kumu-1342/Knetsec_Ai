@@ -9,7 +9,6 @@
  */
 import { z } from 'zod';
 import type { CollectorAdapter, CollectorContext, CollectorResult, RawItem } from '@knetsec/shared';
-import { upstreamError } from '../infra/errors.js';
 import {
   asString,
   DEFAULT_REQUEST_INTERVAL_MS,
@@ -17,7 +16,6 @@ import {
   isRecord,
   plainText,
   sleep,
-  toArray,
   toIsoOrUndefined,
 } from './helpers.js';
 
