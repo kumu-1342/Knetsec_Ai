@@ -13,11 +13,13 @@
 | 仓库地址 | https://github.com/kumu-1342/Knetsec_Ai |
 | 可见性 | Public（公开） |
 | 默认分支 | master（本地 master 跟踪 origin/master） |
-| 提交数 | 8（历史作者已统一为 kumu-1342） |
+| 提交数 | 14（历史作者已统一为 kumu-1342） |
 | 文件数 | 156 个受版本控制文件，约 2.1 MB（不含 node_modules / data） |
 | 仓库描述 | Knetsec_Ai ｜ AI 安全 × 网络安全实时情报平台：多源采集、自动去重打标、自动周报、Vue3 管理面板 |
 | Topics | ai-security、cybersecurity、threat-intelligence、vulnerability-management、ai-security-tools、fastify、vue3、typescript、sqlite、security-intelligence |
-| 最近提交 | `9378312 docs: 补充 29 源实测结果并更新交付报告` |
+| CI | GitHub Actions `CI`（job `ci`），最近运行 #45036961498 成功，用时 54s |
+| 分支保护 | master：Required check `ci`（strict）、禁止强推/删除、需解决会话；管理员可绕过（单人维护） |
+| 最近提交 | `71e9898 ci: 升级 checkout/setup-node 到 v7，消除 Node 20 弃用告警` |
 
 ---
 
@@ -247,7 +249,20 @@ gh api -X PUT repos/kumu-1342/Knetsec_Ai/collaborators/<用户名> -f permission
 gh repo edit --visibility private
 ```
 
-### 9.1 建议补充的仓库设置
+### 9.1 已落地的仓库设置（2026-11-22 补充）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| MIT License | ✅ 已添加 | `LICENSE`，README 许可证章节已同步 |
+| CI 工作流 | ✅ 已启用 | `.github/workflows/ci.yml`：`npm ci → typecheck → lint → test → build`；运行 #45036961498 成功（54s） |
+| Dependabot | ✅ 已启用 | 每周一检查 npm 依赖，已自动开出 5 个 PR（含 4 个主版本升级，建议人工评估） |
+| Dependabot 安全告警 | ✅ 已启用 | 公开仓库依赖漏洞告警 |
+| master 分支保护 | ✅ 已启用 | Required status check = `ci`（strict）、禁止强推、禁止删除分支、要求解决会话；`enforce_admins=false` 保证单人维护可直接推送 |
+| 安全扫描 | ✅ 默认开启 | 公开仓库自动启用 secret scanning（GitHub 免费能力） |
+
+> 说明：分支保护开启了 `ci` 必需检查，但保留管理员绕过，避免单人维护时被自己的规则锁死；多人协作时可改为「Require PR + 至少 1 个审批」。
+
+### 9.2 后续可选增强
 
 1. **About**：补充项目主页/文档链接；
 2. **Branch protection**：为 `master` 开启「Require PR before merging + Require status checks」；
