@@ -1,0 +1,51 @@
+# Knetsec_Ai 持续集成
+#
+# 触发：push 到 master、向 master 提 PR。
+# 内容：安装依赖（含 postinstall 构建 shared）→ 类型检查 → 单元/集成测试 → 生产构建。
+# 说明：
+# - 测试使用内存 SQLite 与假采集器，不访问外网，因此可在 GitHub 托管 Runner 稳定运行；
+# - 单独命名为 ci，供分支保护把它设为 Required status check。
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck (shared + server + web)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit & integration tests
+        run: npm test
+
+      - name: Build (shared + server + web)
+        run: npm run build
